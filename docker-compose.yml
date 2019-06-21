@@ -1,0 +1,63 @@
+version: '3'
+services:
+  mongo:
+    container_name: ${COMPOSE_PROJECT_NAME}_mongo
+    image: mongo
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=$MONGO_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASSWORD
+    ports:
+      - 27017:27017
+    volumes:
+      - ./db:/data/db
+      - ./configdb:/data/configdb
+    networks:
+      - app
+
+
+  go:
+    container_name: ${COMPOSE_PROJECT_NAME}_go
+    build: build/golang/.
+    tty: true
+    ## not use nginx-proxy
+    # ports:
+    #     - "8888:80"
+    expose:
+      - $PORT
+    environment:
+      ## if use nginx-proxy
+      - VIRTUAL_HOST=$VIRTUAL_HOST
+
+      ## if use nginx-proxy for remote
+      # - LETSENCRYPT_HOST=$VIRTUAL_HOST
+
+      ##if use https for remote
+      # - CERT_NAME=$VIRTUAL_HOST
+
+      ## if use https for local
+      # - CERT_NAME=default
+
+      # - HTTPS_METHOD=noredirect
+      - MONGO_INITDB_ROOT_USERNAME=$MONGO_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASSWORD
+
+    working_dir: '/go/src'
+    volumes:
+      - './src:/go/src'
+    logging:
+      options:
+          max-size: "5m"
+          max-file: "10"
+    networks:
+      - external_nginx_proxy
+      - app
+
+
+networks:
+  app:
+
+  #settin virtualhost
+  #use nginx proxy
+  external_nginx_proxy:
+    external: true
